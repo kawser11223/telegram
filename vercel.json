@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "tg/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    },
+    {
+      "src": "/staticfiles/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/staticfiles/$1" },
+    { "src": "/favicon.ico", "dest": "/staticfiles/favicon.ico" },
+    { "src": "/(.*)", "dest": "tg/wsgi.py" },
+    {
+      "src": "/(.*)",
+      "dest": "tg/wsgi.py"
+    }
+  ]
+}
