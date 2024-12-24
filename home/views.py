@@ -31,3 +31,7 @@ def signup(request):
 
 def success(request):
     return JsonResponse({"success": True, "message": "Signup complete"})
+
+
+def test(request):
+    pass
