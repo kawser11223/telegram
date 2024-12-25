@@ -27,7 +27,7 @@ def signup(request):
         json={"chat_id": chat_id, "text": message}
     )
 
-    return render(request, "idex.html", {"username": username, "message": message})
+    return render(request, "index.html", {"username": username, "message": message})
 
 def success(request):
     return JsonResponse({"success": True, "message": "Signup complete"})
