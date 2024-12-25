@@ -10,7 +10,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_chat.username or "User"
 
     # Generate a unique URL for the web app with query parameters
-    web_app_url = f"http://127.0.0.1:8000/signup/?chat_id={chat_id}&username={username}"
+    web_app_url = f"https://telegram-jf1m.vercel.app/?chat_id={chat_id}&username={username}"
 
     # Create a button that opens the web app
     keyboard = [
