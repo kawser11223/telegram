@@ -4,6 +4,5 @@ from .views import *
 urlpatterns = [
     # Other URLs
    path('',signup, name='signup'),
-   path('ytyty/',test)
    
 ]
