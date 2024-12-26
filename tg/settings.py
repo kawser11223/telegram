@@ -40,9 +40,15 @@ INSTALLED_APPS = [
     'home',
 ]
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles' 
+import os
+
+ALLOWED_HOSTS = ["*"]
+DEBUG = False
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
