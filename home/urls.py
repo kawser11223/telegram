@@ -1,8 +1,7 @@
 from django.urls import path
-from .views import *
+from .views import signup, telegram_webhook
 
 urlpatterns = [
-    # Other URLs
-   path('',signup, name='signup'),
-   
+    path("", signup, name="signup"),
+    path("api/webhook", telegram_webhook, name="telegram_webhook"),
 ]
