@@ -1,8 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
-import os
 
-# Telegram Bot Token from environment variable
+# Telegram Bot Token
 TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
 
 # Replace with your frontend web app URL
@@ -34,10 +33,7 @@ application = Application.builder().token(TOKEN).build()
 # Add handlers to the application
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("confirm", confirm))
-application.run_polling()
 
-
-
-
-
-
+# Run the bot
+if __name__ == "__main__":
+    application.run_polling()
