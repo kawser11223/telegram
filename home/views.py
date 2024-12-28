@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import threading
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -17,6 +18,41 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 # Replace with your frontend web app URL
 WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"
+
+# Telegram bot start function
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    username = update.effective_chat.username or "User"
+
+    # Generate a unique URL for the web app with query parameters
+    web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
+
+    # Create a button that opens the web app
+    keyboard = [
+        [InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send the message with the WebApp button
+    await update.message.reply_text(
+        f"Hello {username}! 🎉 To complete your signup, click the button below and follow the steps in the web app. 🚀",
+        reply_markup=reply_markup,
+    )
+
+async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🎉 Signup/Login successful! You are now ready to mine!")
+
+# Run the bot in a separate thread
+def run_bot():
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("confirm", confirm))
+    application.run_polling()
+
+# Function to start the bot in a separate thread
+def start_bot_in_thread():
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
 
 # Signup View
 def signup(request):
@@ -36,6 +72,9 @@ def signup(request):
 
     # Send confirmation message to Telegram
     requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": message})
+
+    # Start the bot in a background thread
+    start_bot_in_thread()
 
     return render(request, "index.html", {"username": username, "message": message})
 
@@ -74,36 +113,3 @@ def send_message(chat_id, text):
         requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
     except Exception as e:
         logger.error(f"Failed to send message: {e}")
-
-# Telegram Command Handlers
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    username = update.effective_chat.username or "User"
-
-    # Generate a unique URL for the web app with query parameters
-    web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
-
-    # Create a button that opens the web app
-    keyboard = [
-        [InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send the message with the WebApp button
-    await update.message.reply_text(
-        f"Hello {username}! 🎉 To complete your signup, click the button below and follow the steps in the web app. 🚀",
-        reply_markup=reply_markup,
-    )
-
-async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎉 Signup/Login successful! You are now ready to mine!")
-
-# Telegram Application Setup
-application = Application.builder().token(BOT_TOKEN).build()
-
-# Add handlers to the application
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("confirm", confirm))
-
-# Run the application
-application.run_polling()
