@@ -3,6 +3,7 @@ import logging
 import requests
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from .models import User
 
 # Set up logging
@@ -31,7 +32,7 @@ def signup(request):
 
     return render(request, "index.html", {"username": username, "message": message})
 
-
+@csrf_exempt
 def telegram_webhook(request):
     if request.method == "POST":
         try:
@@ -57,7 +58,6 @@ def telegram_webhook(request):
             return JsonResponse({"error": "Internal server error"}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 def send_message(chat_id, text):
     """Send a message to a Telegram chat."""
