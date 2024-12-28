@@ -94,7 +94,11 @@ def telegram_webhook(request):
             text = update.get("message", {}).get("text")
 
             if chat_id and text:
-                send_message(chat_id, f"You said: {text}")
+                # Respond to the user based on the message
+                if text == "/start":
+                    send_message(chat_id, "Welcome! How can I help you today?")
+                else:
+                    send_message(chat_id, f"You said: {text}")
                 return JsonResponse({"ok": True})
             else:
                 logger.error("Invalid Telegram payload")
