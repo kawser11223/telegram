@@ -5,7 +5,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
 
 # Replace with your frontend web app URL
-WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app"
+WEB_APP_BASE_URL = "https://telegram-zeta-six.vercel.app/"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
