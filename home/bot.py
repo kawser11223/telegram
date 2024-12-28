@@ -15,7 +15,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
 
     # Create a button that opens the web app
-    keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
+    keyboard = [
+        [InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send the message with the WebApp button
@@ -33,4 +35,6 @@ application = Application.builder().token(TOKEN).build()
 # Add handlers to the application
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("confirm", confirm))
+
+# Run the application
 application.run_polling()
