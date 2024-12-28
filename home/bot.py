@@ -33,7 +33,4 @@ application = Application.builder().token(TOKEN).build()
 # Add handlers to the application
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("confirm", confirm))
-
-# Run the bot
-if __name__ == "__main__":
-    application.run_polling()
+application.run_polling()
