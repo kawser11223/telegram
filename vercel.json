@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "myproject/wsgi.py",
+      "src": "tg/wsgi.py",
       "use": "@vercel/python",
       "config": { "maxLambdaSize": "15mb" }
     },
@@ -12,6 +12,6 @@
   ],
   "routes": [
     { "src": "/static/(.*)", "dest": "/staticfiles/$1" },
-    { "src": "/api/webhook", "dest": "myproject/wsgi.py" }
+    { "src": "/api/webhook", "dest": "tg/wsgi.py" }
   ]
 }
