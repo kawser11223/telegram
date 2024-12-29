@@ -51,12 +51,13 @@ def signup(request):
     return render(request, "index.html", {"username": username, "message": message})
 
 
-# Telegram webhook endpoint
 @csrf_exempt
 def telegram_webhook(request):
     if request.method == "POST":
         try:
             logger.info("Webhook called")
+            logger.info(f"Request body: {request.body}")  # Log the incoming payload
+
             update = json.loads(request.body)
 
             chat_id = update.get("message", {}).get("chat", {}).get("id")
@@ -64,13 +65,11 @@ def telegram_webhook(request):
 
             if chat_id and text:
                 if text == "/start":
-                    # Inline button pointing to the web app
                     username = update.get("message", {}).get("chat", {}).get("username", "User")
                     web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
                     keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
                     reply_markup = {"inline_keyboard": keyboard}
 
-                    # Send message with WebApp button
                     requests.post(
                         TELEGRAM_API_URL,
                         json={"chat_id": chat_id, "text": "Welcome! Click the button to start mining 🚀", "reply_markup": reply_markup},
@@ -83,6 +82,7 @@ def telegram_webhook(request):
             logger.error(f"Error processing webhook: {e}")
             return JsonResponse({"error": "Internal server error"}, status=500)
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
 
 
 # Utility function to send Telegram messages
