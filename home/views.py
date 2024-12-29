@@ -56,10 +56,12 @@ def telegram_webhook(request):
     if request.method == "POST":
         try:
             logger.info("Webhook called")
-            logger.info(f"Request body: {request.body}")  # Log the incoming payload
+            logger.info(f"Request body: {request.body}")  # Log the incoming payload for debugging
 
-            update = json.loads(request.body)
+            update = json.loads(request.body)  # Parse the incoming payload
+            logger.info(f"Parsed update: {update}")
 
+            # Extract chat_id and text
             chat_id = update.get("message", {}).get("chat", {}).get("id")
             text = update.get("message", {}).get("text")
 
@@ -70,18 +72,21 @@ def telegram_webhook(request):
                     keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
                     reply_markup = {"inline_keyboard": keyboard}
 
-                    requests.post(
+                    # Send a message with an inline keyboard
+                    response = requests.post(
                         TELEGRAM_API_URL,
                         json={"chat_id": chat_id, "text": "Welcome! Click the button to start mining 🚀", "reply_markup": reply_markup},
                     )
+                    logger.info(f"Message sent: {response.json()}")  # Log Telegram API response
                 else:
                     send_message(chat_id, f"You said: {text}")
                 return JsonResponse({"ok": True})
             return JsonResponse({"error": "Invalid Telegram payload"}, status=400)
         except Exception as e:
-            logger.error(f"Error processing webhook: {e}")
+            logger.error(f"Error processing webhook: {e}", exc_info=True)  # Log full stack trace
             return JsonResponse({"error": "Internal server error"}, status=500)
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
 
 
 
