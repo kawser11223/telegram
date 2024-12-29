@@ -89,8 +89,6 @@ def telegram_webhook(request):
 
 
 
-
-# Utility function to send Telegram messages
 def send_message(chat_id, text):
     try:
         requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
