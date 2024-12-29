@@ -10,13 +10,13 @@ import asyncio
 import threading
 
 # Logging setup
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Telegram Bot Configuration
 BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"
-
 
 # Telegram bot `/start` handler for bot polling
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -34,7 +34,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
     )
 
-
 # Django signup view
 def signup(request):
     chat_id = request.GET.get("chat_id")
@@ -50,23 +49,19 @@ def signup(request):
     # Render the HTML page
     return render(request, "index.html", {"username": username, "message": message})
 
-
 @csrf_exempt
 def telegram_webhook(request):
     if request.method == "POST":
         try:
-            # Log incoming request for debugging
             logger.info("Webhook called")
-            logger.info(f"Request body: {request.body}")  # Log the incoming payload for debugging
-
-            update = json.loads(request.body)  # Parse the incoming payload
+            update = json.loads(request.body)
             logger.info(f"Parsed update: {update}")
 
-            # Extract chat_id and text from the message
             chat_id = update.get("message", {}).get("chat", {}).get("id")
             text = update.get("message", {}).get("text")
 
             if not chat_id or not text:
+                logger.warning("Invalid payload: missing chat_id or text")
                 return JsonResponse({"error": "Invalid payload: chat_id or text missing"}, status=400)
 
             if text == "/start":
@@ -75,31 +70,31 @@ def telegram_webhook(request):
                 keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
                 reply_markup = {"inline_keyboard": keyboard}
 
-                # Send a message with an inline keyboard
                 response = requests.post(
                     TELEGRAM_API_URL,
                     json={"chat_id": chat_id, "text": "Welcome! Click the button to start mining 🚀", "reply_markup": reply_markup},
                 )
-                logger.info(f"Message sent: {response.json()}")  # Log Telegram API response
+                if response.status_code != 200:
+                    logger.error(f"Telegram API error: {response.status_code} {response.text}")
 
             else:
                 send_message(chat_id, f"You said: {text}")
-            
+
             return JsonResponse({"ok": True})
 
         except Exception as e:
-            logger.error(f"Error processing webhook: {e}", exc_info=True)  # Log full stack trace
+            logger.error(f"Error processing webhook: {e}", exc_info=True)
             return JsonResponse({"error": "Internal server error"}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
-
 def send_message(chat_id, text):
     try:
-        requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
+        response = requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
+        if response.status_code != 200:
+            logger.error(f"Telegram API error: {response.status_code} {response.text}")
     except Exception as e:
-        logger.error(f"Failed to send message: {e}")
-
+        logger.error(f"Failed to send message: {e}", exc_info=True)
 
 # Run bot in a separate thread for polling
 def run_bot():
@@ -108,8 +103,6 @@ def run_bot():
     application.add_handler(CommandHandler("start", start))
     application.run_polling()
 
-
 def start_bot_in_thread():
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
-
