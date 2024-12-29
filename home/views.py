@@ -1,13 +1,13 @@
 import json
 import logging
 import requests
+import threading
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
 import asyncio
-import threading
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 # Telegram Bot Configuration
 BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"
+WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"  # Replace with your actual web app URL
 
-# Telegram bot `/start` handler for bot polling
+# Telegram bot /start handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     username = update.effective_chat.username or "User"
@@ -27,6 +27,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
     keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Log the web app URL for debugging
+    logger.info(f"Web App URL for {username}: {web_app_url}")
 
     # Send message with WebApp button
     await update.message.reply_text(
@@ -49,54 +52,38 @@ def signup(request):
     # Render the HTML page
     return render(request, "index.html", {"username": username, "message": message})
 
+# Telegram webhook handler
 @csrf_exempt
 def telegram_webhook(request):
     if request.method == "POST":
         try:
             logger.info("Webhook called")
             update = json.loads(request.body)
-            logger.info(f"Parsed update: {update}")
 
             chat_id = update.get("message", {}).get("chat", {}).get("id")
             text = update.get("message", {}).get("text")
 
-            if not chat_id or not text:
-                logger.warning("Invalid payload: missing chat_id or text")
-                return JsonResponse({"error": "Invalid payload: chat_id or text missing"}, status=400)
-
-            if text == "/start":
-                username = update.get("message", {}).get("chat", {}).get("username", "User")
-                web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
-                keyboard = [[InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]]
-                reply_markup = {"inline_keyboard": keyboard}
-
-                response = requests.post(
-                    TELEGRAM_API_URL,
-                    json={"chat_id": chat_id, "text": "Welcome! Click the button to start mining 🚀", "reply_markup": reply_markup},
-                )
-                if response.status_code != 200:
-                    logger.error(f"Telegram API error: {response.status_code} {response.text}")
-
-            else:
-                send_message(chat_id, f"You said: {text}")
-
-            return JsonResponse({"ok": True})
-
+            if chat_id and text:
+                if text == "/start":
+                    send_message(chat_id, "Welcome! Click the button to start mining.")
+                else:
+                    send_message(chat_id, f"You said: {text}")
+                return JsonResponse({"ok": True})
+            return JsonResponse({"error": "Invalid Telegram payload"}, status=400)
         except Exception as e:
-            logger.error(f"Error processing webhook: {e}", exc_info=True)
+            logger.error(f"Error processing webhook: {e}")
             return JsonResponse({"error": "Internal server error"}, status=500)
-
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+# Utility function to send Telegram messages
 def send_message(chat_id, text):
     try:
         response = requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
-        if response.status_code != 200:
-            logger.error(f"Telegram API error: {response.status_code} {response.text}")
+        response.raise_for_status()
     except Exception as e:
-        logger.error(f"Failed to send message: {e}", exc_info=True)
+        logger.error(f"Failed to send message: {e}")
 
-# Run bot in a separate thread for polling
+# Run bot in a separate thread
 def run_bot():
     asyncio.set_event_loop(asyncio.new_event_loop())  # Create and set event loop for this thread
     application = Application.builder().token(BOT_TOKEN).build()
@@ -106,3 +93,11 @@ def run_bot():
 def start_bot_in_thread():
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
+
+# Main function to start the bot and server
+if __name__ == "__main__":
+    # Start the bot in a background thread
+    start_bot_in_thread()
+
+    # Django app setup (you'd integrate this with your Django project)
+    logger.info("Bot is running in the background")
