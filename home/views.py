@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 # Telegram Bot Configuration
 BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"  # Replace with your actual web app URL
 
 # Telegram bot /start handler
@@ -57,19 +56,10 @@ def signup(request):
 def telegram_webhook(request):
     if request.method == "POST":
         try:
-            logger.info("Webhook called")
-            update = json.loads(request.body)
-
-            chat_id = update.get("message", {}).get("chat", {}).get("id")
-            text = update.get("message", {}).get("text")
-
-            if chat_id and text:
-                if text == "/start":
-                    send_message(chat_id, "Welcome! Click the button to start mining.")
-                else:
-                    send_message(chat_id, f"You said: {text}")
-                return JsonResponse({"ok": True})
-            return JsonResponse({"error": "Invalid Telegram payload"}, status=400)
+            # Pass the incoming request to the Telegram bot application
+            update_data = json.loads(request.body)
+            asyncio.run(application.process_update(Update.de_json(update_data, application.bot)))
+            return JsonResponse({"ok": True})
         except Exception as e:
             logger.error(f"Error processing webhook: {e}")
             return JsonResponse({"error": "Internal server error"}, status=500)
@@ -78,16 +68,18 @@ def telegram_webhook(request):
 # Utility function to send Telegram messages
 def send_message(chat_id, text):
     try:
+        TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
         response = requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
         response.raise_for_status()
     except Exception as e:
         logger.error(f"Failed to send message: {e}")
 
 # Run bot in a separate thread
+application = Application.builder().token(BOT_TOKEN).build()
+application.add_handler(CommandHandler("start", start))
+
 def run_bot():
     asyncio.set_event_loop(asyncio.new_event_loop())  # Create and set event loop for this thread
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
     application.run_polling()
 
 def start_bot_in_thread():
