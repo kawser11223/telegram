@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Telegram Bot Configuration
-BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
+BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"  # Replace with your bot token
 WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"  # Replace with your actual web app URL
 
 # Telegram bot /start handler
@@ -58,6 +58,7 @@ def telegram_webhook(request):
         try:
             # Pass the incoming request to the Telegram bot application
             update_data = json.loads(request.body)
+            logger.info(f"Webhook update received: {update_data}")
             asyncio.run(application.process_update(Update.de_json(update_data, application.bot)))
             return JsonResponse({"ok": True})
         except Exception as e:
@@ -90,6 +91,4 @@ def start_bot_in_thread():
 if __name__ == "__main__":
     # Start the bot in a background thread
     start_bot_in_thread()
-
-    # Django app setup (you'd integrate this with your Django project)
     logger.info("Bot is running in the background")
