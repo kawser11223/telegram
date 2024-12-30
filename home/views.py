@@ -39,11 +39,18 @@ def telegram_webhook(request):
                 # Generate the Web App URL with query parameters
                 web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
 
-                # Create inline keyboard with the Web App button
+                # Create inline keyboard with the Web App button (convert it to a dictionary)
                 keyboard = [
                     [InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]
                 ]
-                reply_markup = {"inline_keyboard": keyboard}
+                
+                # Convert the keyboard to dictionary format for JSON serialization
+                reply_markup = {
+                    "inline_keyboard": [[{
+                        "text": button.text,
+                        "web_app": button.web_app.to_dict() if button.web_app else None
+                    } for button in row] for row in keyboard]
+                }
 
                 # Send the message with the Web App button
                 send_message(chat_id, 
