@@ -1,26 +1,95 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import User
-import requests
-import logging
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 import json
+import logging
+import requests
 
-# Setup logger
+from .models import User
+
+# Logger setup
 logger = logging.getLogger(__name__)
 
+# Telegram Bot Token and API URL
 BOT_TOKEN = "7947742121:AAEyNzPDyfS-TE9Uq1lesFScsC-nahaKIZI"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
+# Web App URL (replace with your own frontend URL)
+WEB_APP_BASE_URL = "https://telegram-jf1m.vercel.app/"
+
+@csrf_exempt
+def telegram_webhook(request):
+    if request.method == "POST":
+        try:
+            # Log the incoming update (for debugging)
+            logger.info(f"Webhook called. Request body: {request.body}")
+            
+            # Parse the incoming Telegram update
+            update = json.loads(request.body)
+            message = update.get("message")
+            
+            if not message:
+                return JsonResponse({"error": "No message found"}, status=400)
+
+            chat_id = message.get("chat", {}).get("id")
+            text = message.get("text")
+            username = message.get("chat", {}).get("username", "User")
+
+            if chat_id and text == "/start":
+                # Generate the Web App URL with query parameters
+                web_app_url = f"{WEB_APP_BASE_URL}/?chat_id={chat_id}&username={username}"
+
+                # Create inline keyboard with the Web App button
+                keyboard = [
+                    [InlineKeyboardButton("Start Mining 🚀", web_app=WebAppInfo(url=web_app_url))]
+                ]
+                reply_markup = {"inline_keyboard": keyboard}
+
+                # Send the message with the Web App button
+                send_message(chat_id, 
+                             f"Hello {username}! 🎉 Click the button below to complete your signup. 🚀", 
+                             reply_markup=reply_markup)
+                return JsonResponse({"ok": True}, status=200)
+
+            elif chat_id and text:
+                # Echo any other text
+                send_message(chat_id, f"You said: {text}")
+                return JsonResponse({"ok": True}, status=200)
+
+            return JsonResponse({"error": "Invalid payload"}, status=400)
+
+        except Exception as e:
+            logger.error(f"Error processing webhook: {e}")
+            return JsonResponse({"error": "Internal server error"}, status=500)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+def send_message(chat_id, text, reply_markup=None):
+    """Send a message to a Telegram chat."""
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+
+    try:
+        response = requests.post(TELEGRAM_API_URL, json=payload)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to send message: {e}")
+
 
 def signup(request):
+    """Handles user signup and sends a confirmation message to Telegram."""
     chat_id = request.GET.get('chat_id')
     username = request.GET.get('username')
 
     if not chat_id or not username:
         return JsonResponse({"error": "Chat ID and username are required"}, status=400)
 
-    # Check if the user exists
+    # Check if the user exists or create a new user
     user, created = User.objects.get_or_create(chat_id=chat_id, defaults={'username': username})
 
     if not created:
@@ -31,45 +100,9 @@ def signup(request):
     # Send confirmation message to Telegram
     send_message(chat_id, message)
 
-    return render(request, "index.html", {"username": username, "message": message})
+    return JsonResponse({"username": username, "message": message})
 
 
 def success(request):
+    """Handle successful signup."""
     return JsonResponse({"success": True, "message": "Signup complete"})
-
-
-@csrf_exempt
-def telegram_webhook(request):
-    if request.method == "POST":
-        try:
-            # Log the request body
-            logger.info("Webhook called")
-            logger.info(f"Request body: {request.body}")
-
-            # Parse the incoming Telegram update
-            update = json.loads(request.body)
-
-            chat_id = update.get("message", {}).get("chat", {}).get("id")
-            text = update.get("message", {}).get("text")
-
-            if chat_id and text:
-                send_message(chat_id, f"You said: {text}")
-                return JsonResponse({"ok": True}, status=200)
-            else:
-                logger.error("Invalid Telegram payload")
-                return JsonResponse({"error": "Invalid Telegram payload"}, status=400)
-
-        except Exception as e:
-            logger.error(f"Error processing webhook: {e}")
-            return JsonResponse({"error": "Internal server error"}, status=500)
-
-    return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
-def send_message(chat_id, text):
-    """Send a message to a Telegram chat."""
-    try:
-        response = requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": text})
-        response.raise_for_status()  # Raise an exception for HTTP errors
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send message: {e}")
