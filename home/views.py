@@ -21,6 +21,7 @@ def signup(request):
     send_message(chat_id, message)
     return render(request, "index.html", {"username": username, "message": message})
 
+@csrf_exempt
 def telegram_webhook(request):
     if request.method == "POST":
         try:
@@ -31,7 +32,7 @@ def telegram_webhook(request):
             if chat_id and text:
                 send_message(chat_id, f"You said: {text}")
 
-            return JsonResponse({"ok": True})
+            return JsonResponse({"ok": True}, status=200)
         except Exception as e:
             logger.error(f"Error: {e}")
             return JsonResponse({"error": "Failed to process update"}, status=500)
