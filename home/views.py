@@ -4,6 +4,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppI
 import json
 import logging
 import requests
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
