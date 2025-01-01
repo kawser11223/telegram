@@ -1,9 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-import json
-import logging
-import requests
+import logging,requests,json
+from django.shortcuts import render, redirect
 
 from .models import User
 
@@ -89,33 +88,33 @@ def send_message(chat_id, text, reply_markup=None):
 
 
 def signup(request):
-    """Handles user signup and sends a welcome message to Telegram only once."""
+    """Handles user signup and redirects to home.html after login/signup."""
     chat_id = request.GET.get('chat_id')
     username = request.GET.get('username')
 
     if not chat_id or not username:
         return JsonResponse({"error": "Chat ID and username are required"}, status=400)
 
-    # Check if the user exists or create a new user
+   
     user, created = User.objects.get_or_create(chat_id=chat_id, defaults={'username': username})
 
     if created:
-        # New user: send a signup welcome message
+       
         message = f"Hello {username}! Your signup is complete. 🚀"
         user.welcome_sent = True
         user.save()
         send_message(chat_id, message)
     elif not user.welcome_sent:
-        # Existing user but welcome message not sent: send the message
+       
         message = f"Welcome back, {username}! 🎉"
         user.welcome_sent = True
         user.save()
         send_message(chat_id, message)
     else:
-        # Existing user and welcome message already sent
+        
         message = f"Hello {username}, you're already signed up and logged in! 🚀"
-
-    return JsonResponse({"username": username, "message": message})
+    context = {"username": username}
+    return render(request, "index.html", context)
 
 
 
