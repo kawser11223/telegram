@@ -89,7 +89,7 @@ def send_message(chat_id, text, reply_markup=None):
 
 
 def signup(request):
-    """Handles user signup and sends a confirmation message to Telegram."""
+    """Handles user signup and sends a welcome message to Telegram only once."""
     chat_id = request.GET.get('chat_id')
     username = request.GET.get('username')
 
@@ -99,15 +99,24 @@ def signup(request):
     # Check if the user exists or create a new user
     user, created = User.objects.get_or_create(chat_id=chat_id, defaults={'username': username})
 
-    if not created:
-        message = f"Welcome back, {username}! You are already signed up. 🎉"
-    else:
+    if created:
+        # New user: send a signup welcome message
         message = f"Hello {username}! Your signup is complete. 🚀"
-
-    # Send confirmation message to Telegram
-    send_message(chat_id, message)
+        user.welcome_sent = True
+        user.save()
+        send_message(chat_id, message)
+    elif not user.welcome_sent:
+        # Existing user but welcome message not sent: send the message
+        message = f"Welcome back, {username}! 🎉"
+        user.welcome_sent = True
+        user.save()
+        send_message(chat_id, message)
+    else:
+        # Existing user and welcome message already sent
+        message = f"Hello {username}, you're already signed up and logged in! 🚀"
 
     return JsonResponse({"username": username, "message": message})
+
 
 
 def success(request):
