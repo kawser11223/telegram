@@ -114,7 +114,7 @@ def signup(request):
         
         message = f"Hello {username}, you're already signed up and logged in! 🚀"
     context = {"username": username}
-    return render(request, "index.html", context)
+    return render(request, "home.html", context)
 
 
 
